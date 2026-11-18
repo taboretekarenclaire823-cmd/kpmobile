@@ -603,6 +603,13 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen>
     };
     final date = stage['date']?.toString();
     final deadline = stage['deadline']?.toString();
+    final schedule = stage['schedule']?.toString();
+    final hasSchedule = schedule != null && schedule.isNotEmpty;
+    final showRecordedDate = date != null &&
+        date.isNotEmpty &&
+        (!hasSchedule || stage['key'] == 'arbitration');
+    final dateLabel =
+        stage['key'] == 'arbitration' ? 'Recorded' : 'Date';
     final label = status.isEmpty
         ? status
         : '${status[0].toUpperCase()}${status.substring(1)}';
@@ -658,12 +665,22 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen>
                   height: 1.35,
                 ),
               ),
-              if ((date != null && date.isNotEmpty) ||
-                  (deadline != null && deadline.isNotEmpty)) ...[
+              if (hasSchedule) ...[
+                const SizedBox(height: 5),
+                Text(
+                  'Scheduled: $schedule',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+              if (showRecordedDate || (deadline != null && deadline.isNotEmpty)) ...[
                 const SizedBox(height: 5),
                 Text(
                   [
-                    if (date != null && date.isNotEmpty) 'Date: $date',
+                    if (showRecordedDate)
+                      '$dateLabel: $date',
                     if (deadline != null && deadline.isNotEmpty)
                       'Due: $deadline',
                   ].join('  ·  '),
