@@ -359,16 +359,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final name = (_user['name'] ?? 'Resident').toString();
     final residentNo = (_resident?['resident_no'] ?? 'N/A').toString();
     final status = (_resident?['verification_status'] ?? 'Unknown').toString();
-    final approved = status == 'Approved';
+    final canFile = _resident?['can_file'] == true;
+    final filingBlockedMessage =
+        (_resident?['filing_blocked_message'] ?? '').toString().trim();
 
     late final IconData statusIcon;
     late final Color statusColor;
     late final String statusMessage;
     switch (status) {
       case 'Approved':
-        statusIcon = Icons.verified;
-        statusColor = Colors.green;
-        statusMessage = 'Your account is approved.';
+        statusIcon = canFile ? Icons.verified : Icons.info_outline;
+        statusColor = canFile ? Colors.green : Colors.orange;
+        statusMessage = filingBlockedMessage.isNotEmpty
+            ? filingBlockedMessage
+            : 'Your account is approved, but filing is currently unavailable. '
+                'Please contact the barangay.';
         break;
       case 'Rejected':
         statusIcon = Icons.cancel;
@@ -379,8 +384,10 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         statusIcon = Icons.hourglass_top;
         statusColor = Colors.orange;
-        statusMessage = 'Waiting for the barangay to approve your account. '
-            'You will be able to file reports and complaints once approved.';
+        statusMessage = filingBlockedMessage.isNotEmpty
+            ? filingBlockedMessage
+            : 'Waiting for the barangay to approve your account. '
+                'You will be able to file reports and complaints once approved.';
     }
 
     return Scaffold(
@@ -452,9 +459,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (!approved)
+                  if (!canFile)
                     _statusCard(statusIcon, statusColor, statusMessage),
-                  if (approved) ...[
+                  if (canFile) ...[
                     _sectionLabel('File something', first: true),
                     IntrinsicHeight(
                       child: Row(
@@ -480,47 +487,47 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    _group('My cases', [
-                      _NavItem(
-                        title: 'My reports',
-                        subtitle: 'Incident reports you filed',
-                        icon: Icons.list_alt,
-                        onTap: () => _open(const BlotterListScreen()),
-                      ),
-                      _NavItem(
-                        title: 'My complaints',
-                        subtitle: 'Track the status of your cases',
-                        icon: Icons.description_outlined,
-                        onTap: () => _open(const ComplaintListScreen()),
-                      ),
-                      _NavItem(
-                        title: 'Hearing schedule',
-                        subtitle: 'Upcoming and past hearings',
-                        icon: Icons.event,
-                        onTap: () => _open(const HearingListScreen()),
-                      ),
-                    ]),
-                    _group('Notices & documents', [
-                      _NavItem(
-                        title: 'My summons',
-                        subtitle: 'Notices to appear as respondent',
-                        icon: Icons.mail_outline,
-                        onTap: () => _open(const SummonsListScreen()),
-                      ),
-                      _NavItem(
-                        title: 'My subpoenas',
-                        subtitle: 'Notices to appear as witness',
-                        icon: Icons.assignment_outlined,
-                        onTap: () => _open(const SubpoenaListScreen()),
-                      ),
-                      _NavItem(
-                        title: 'Certificates & awards',
-                        subtitle: 'Official documents for your case',
-                        icon: Icons.workspace_premium_outlined,
-                        onTap: () => _open(const CertificateListScreen()),
-                      ),
-                    ]),
                   ],
+                  _group('My cases', [
+                    _NavItem(
+                      title: 'My reports',
+                      subtitle: 'Incident reports you filed',
+                      icon: Icons.list_alt,
+                      onTap: () => _open(BlotterListScreen(canFile: canFile)),
+                    ),
+                    _NavItem(
+                      title: 'My complaints',
+                      subtitle: 'Track the status of your cases',
+                      icon: Icons.description_outlined,
+                      onTap: () => _open(ComplaintListScreen(canFile: canFile)),
+                    ),
+                    _NavItem(
+                      title: 'Hearing schedule',
+                      subtitle: 'Upcoming and past hearings',
+                      icon: Icons.event,
+                      onTap: () => _open(const HearingListScreen()),
+                    ),
+                  ]),
+                  _group('Notices & documents', [
+                    _NavItem(
+                      title: 'My summons',
+                      subtitle: 'Notices to appear as respondent',
+                      icon: Icons.mail_outline,
+                      onTap: () => _open(const SummonsListScreen()),
+                    ),
+                    _NavItem(
+                      title: 'My subpoenas',
+                      subtitle: 'Notices to appear as witness',
+                      icon: Icons.assignment_outlined,
+                      onTap: () => _open(const SubpoenaListScreen()),
+                    ),
+                    _NavItem(
+                      title: 'Certificates & awards',
+                      subtitle: 'Official documents for your case',
+                      icon: Icons.workspace_premium_outlined,
+                      onTap: () => _open(const CertificateListScreen()),
+                    ),
+                  ]),
                   _group('Account', [
                     _NavItem(
                       title: 'My profile',

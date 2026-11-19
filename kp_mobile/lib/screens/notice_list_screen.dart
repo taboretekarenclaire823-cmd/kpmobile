@@ -105,6 +105,7 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
     switch (status) {
       case 'Cancelled':
         return Colors.red;
+      case 'Served':
       case 'Acknowledged':
       case 'Delivered':
         return Colors.green;
@@ -254,6 +255,12 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
                   value: _val(n['place_of_appearance'])),
               DetailRow(label: 'Date issued', value: _val(n['date_issued'])),
               DetailRow(label: 'Issued by', value: _val(n['issued_by'])),
+              if (_val(n['service_mode']) != '—')
+                DetailRow(label: 'How served', value: _val(n['service_mode'])),
+              if (_val(n['date_served']) != '—')
+                DetailRow(label: 'Date served', value: _val(n['date_served'])),
+              if (_val(n['served_by']) != '—')
+                DetailRow(label: 'Served by', value: _val(n['served_by'])),
               _letterButton(n),
             ],
           ),

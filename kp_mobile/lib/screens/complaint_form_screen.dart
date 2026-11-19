@@ -35,14 +35,15 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _title = TextEditingController();
   final _details = TextEditingController();
+  final _otherComplaintType = TextEditingController();
   final _incidentBarangay = TextEditingController();
   final _incidentCity = TextEditingController();
 
   String? _type;
   String? _location;
   DateTime? _incidentAt;
-  PartyValue? _respondent;
-  PartyValue? _witness;
+  final List<PartyEntry> _respondents = [PartyEntry()];
+  final List<PartyEntry> _witnesses = [];
   int? _blotterId;
   List<Map<String, dynamic>> _blotters = [];
   bool _loading = false;
@@ -57,6 +58,7 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
   void dispose() {
     _title.dispose();
     _details.dispose();
+    _otherComplaintType.dispose();
     _incidentBarangay.dispose();
     _incidentCity.dispose();
     super.dispose();
@@ -69,7 +71,11 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
       if (!mounted) return;
       setState(() {
         _blotters = all
-            .where((b) => b['status'] == 'Open' || b['status'] == 'Pending')
+            .where(
+              (b) =>
+                  (b['status'] == 'Open' || b['status'] == 'Pending') &&
+                  b['has_complaint'] != true,
+            )
             .toList();
       });
     } catch (_) {
@@ -126,7 +132,7 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save(); // fills _respondent and _witness
+    _formKey.currentState!.save();
 
     if (_incidentAt == null) {
       _msg('Please choose when the incident happened.');
@@ -149,6 +155,8 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
         'complaint_title': _title.text.trim(),
         'complaint_details': _details.text.trim(),
         'complaint_type': _type,
+        if (_type == 'Other')
+          'other_complaint_type': _otherComplaintType.text.trim(),
         'incident_datetime': _forApi(_incidentAt!),
         'incident_location': _location,
         if (_location == 'Outside Paraiso') ...{
@@ -156,8 +164,13 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
           'incident_city': _incidentCity.text.trim(),
         },
         if (_blotterId != null) 'blotter_id': _blotterId,
-        'respondents': [_respondent!.toApi()],
-        if (_witness != null) 'witnesses': [_witness!.toApi()],
+        'respondents':
+            _respondents.map((entry) => entry.value!.toApi()).toList(),
+        if (_witnesses.any((entry) => entry.value != null))
+          'witnesses': _witnesses
+              .where((entry) => entry.value != null)
+              .map((entry) => entry.value!.toApi())
+              .toList(),
       });
 
       if (!mounted) return;
@@ -167,6 +180,23 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
           'The complaint was submitted, but its ID was not returned.',
         );
       }
+      final message = complaint['submission_message']?.toString().trim();
+      if (message != null && message.isNotEmpty) {
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Complaint submitted'),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        );
+      }
+      if (!mounted) return;
       Navigator.of(context).pop(complaintId);
     } catch (e) {
       _msg(e.toString().replaceFirst('Exception: ', ''));
@@ -258,6 +288,21 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
                           onChanged: (v) => setState(() => _type = v),
                           validator: (v) => v == null ? 'Required' : null,
                         ),
+                        if (_type == 'Other') ...[
+                          gap,
+                          TextFormField(
+                            controller: _otherComplaintType,
+                            textCapitalization: TextCapitalization.sentences,
+                            maxLength: 150,
+                            decoration: fieldDecoration(
+                              'Describe the complaint type',
+                              icon: Icons.edit_note,
+                            ),
+                            validator: (value) => _type == 'Other'
+                                ? _required(value)
+                                : null,
+                          ),
+                        ],
                         gap,
                         InkWell(
                           borderRadius: BorderRadius.circular(12),
@@ -340,29 +385,95 @@ class _ComplaintFormScreenState extends State<ComplaintFormScreen> {
                       title: 'Person you are complaining about',
                       icon: Icons.person_outline,
                       caption:
-                          'Search registered residents, or type a name '
-                          'if the person is not registered.',
+                          'Add up to 10 respondents. Search registered '
+                          'residents, or type a name if the person is not '
+                          'registered.',
                       children: [
-                        PartyField(
-                          label: 'Name of the person',
-                          requireCity: _location == 'Outside Paraiso',
-                          initialValue: _respondent,
-                          onSaved: (v) => _respondent = v,
-                        ),
+                        for (final entry in _respondents) ...[
+                          if (_respondents.indexOf(entry) > 0) gap,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: PartyField(
+                                  key: ObjectKey(entry),
+                                  label: _respondents.indexOf(entry) == 0
+                                      ? 'Name of the person'
+                                      : 'Respondent '
+                                          '${_respondents.indexOf(entry) + 1}',
+                                  requireCity: _location == 'Outside Paraiso',
+                                  initialValue: entry.value,
+                                  onSaved: (value) => entry.value = value,
+                                ),
+                              ),
+                              if (_respondents.length > 1)
+                                IconButton(
+                                  tooltip: 'Remove respondent',
+                                  onPressed: () => setState(
+                                    () => _respondents.remove(entry),
+                                  ),
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                ),
+                            ],
+                          ),
+                        ],
+                        if (_respondents.length < 10) ...[
+                          gap,
+                          OutlinedButton.icon(
+                            onPressed: () => setState(
+                              () => _respondents.add(PartyEntry()),
+                            ),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add respondent'),
+                          ),
+                        ],
                       ],
                     ),
                     cardGap,
                     SectionCard(
                       title: 'Witness',
                       icon: Icons.visibility_outlined,
-                      caption: 'Optional. Add someone who saw what happened.',
+                      caption:
+                          'Optional. Add up to 10 witnesses who saw what '
+                          'happened.',
                       children: [
-                        PartyField(
-                          label: 'Witness (optional)',
-                          isRequired: false,
-                          initialValue: _witness,
-                          onSaved: (v) => _witness = v,
-                        ),
+                        for (final entry in _witnesses) ...[
+                          if (_witnesses.indexOf(entry) > 0) gap,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: PartyField(
+                                  key: ObjectKey(entry),
+                                  label:
+                                      'Witness '
+                                      '${_witnesses.indexOf(entry) + 1} '
+                                      '(optional)',
+                                  isRequired: false,
+                                  initialValue: entry.value,
+                                  onSaved: (value) => entry.value = value,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Remove witness',
+                                onPressed: () => setState(
+                                  () => _witnesses.remove(entry),
+                                ),
+                                icon: const Icon(Icons.remove_circle_outline),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (_witnesses.length < 10) ...[
+                          gap,
+                          OutlinedButton.icon(
+                            onPressed: () => setState(
+                              () => _witnesses.add(PartyEntry()),
+                            ),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add witness'),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 28),

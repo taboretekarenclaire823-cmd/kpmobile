@@ -454,26 +454,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         gap,
                         _field(
                           controller: _nationality,
-                          label: 'Nationality',
+                          label: 'Nationality (optional)',
                           capitalization: TextCapitalization.words,
-                          validator: _required,
                         ),
                         gap,
                         _listDropdown(
-                          label: 'Educational attainment',
+                          label: 'Educational attainment (optional)',
                           items: _educationalStatuses,
                           value: _educationalStatus,
-                          required: true,
                           onChanged: (v) =>
                               setState(() => _educationalStatus = v),
                         ),
                         gap,
                         _field(
                           controller: _occupation,
-                          label: 'Occupation',
+                          label: 'Occupation (optional)',
                           icon: Icons.work_outline,
                           capitalization: TextCapitalization.words,
-                          validator: _required,
                         ),
                         gap,
                         _field(
@@ -486,12 +483,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         gap,
                         _field(
                           controller: _contactEmail,
-                          label: 'Contact email',
+                          label: 'Contact email (optional)',
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             final email = (value ?? '').trim();
-                            if (email.isEmpty) return 'Required';
+                            if (email.isEmpty) return null;
                             if (email.length > 255 ||
                                 !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
                                     .hasMatch(email)) {
@@ -636,11 +633,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         gap,
                         _listDropdown(
-                          label: 'Purok',
+                          label: 'Purok (optional)',
                           items: _puroks,
                           value: _purok,
                           onChanged: (v) => setState(() => _purok = v),
-                          required: true,
                         ),
                         if (_purok == 'Others') ...[
                           gap,

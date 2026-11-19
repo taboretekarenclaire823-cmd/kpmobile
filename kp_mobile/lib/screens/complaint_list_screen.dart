@@ -13,7 +13,9 @@ String _errorText(Object? e) =>
 String _money(dynamic v) => '₱${((v ?? 0) as num).toStringAsFixed(2)}';
 
 class ComplaintListScreen extends StatefulWidget {
-  const ComplaintListScreen({super.key});
+  final bool canFile;
+
+  const ComplaintListScreen({super.key, this.canFile = true});
 
   @override
   State<ComplaintListScreen> createState() => _ComplaintListScreenState();
@@ -130,11 +132,13 @@ class _ComplaintListScreenState extends State<ComplaintListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: styledAppBar(context, 'My complaints'),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _newComplaint,
-        icon: const Icon(Icons.add),
-        label: const Text('New complaint'),
-      ),
+      floatingActionButton: widget.canFile
+          ? FloatingActionButton.extended(
+              onPressed: _newComplaint,
+              icon: const Icon(Icons.add),
+              label: const Text('New complaint'),
+            )
+          : null,
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snapshot) {
@@ -798,6 +802,15 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen>
                             value: c['date_filed']?.toString() ?? '—',
                           ),
                           DetailRow(
+                            label: 'Screening',
+                            value: c['screening_outcome']?.toString() ??
+                                'Pending',
+                          ),
+                          DetailRow(
+                            label: 'Venue assessment',
+                            value: c['venue_result']?.toString() ?? '—',
+                          ),
+                          DetailRow(
                             label: 'When it happened',
                             value: c['incident_at']?.toString() ?? '—',
                           ),
@@ -858,7 +871,7 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen>
                         const SizedBox(height: 20),
                         _workflowCard(workflow),
                       ],
-                      if (fee != null && !sharedBlotterFeeSatisfied) ...[
+                      if (fee != null) ...[
                         const SizedBox(height: 20),
                         _feeCard(
                           fee,

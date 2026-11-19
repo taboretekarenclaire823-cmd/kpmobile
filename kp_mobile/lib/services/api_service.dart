@@ -105,6 +105,51 @@ class ApiService {
     throw Exception(_message(response, 'Login failed.'));
   }
 
+  static Future<String> requestPasswordReset(String email) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/password/forgot'),
+        headers: _jsonHeaders,
+        body: jsonEncode({'email': email.trim()}),
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final data = _decode(response) as Map;
+      return (data['message'] ??
+              'If a resident account uses that email, a reset code will be sent shortly.')
+          .toString();
+    }
+    throw Exception(_message(response, 'Could not request a reset code.'));
+  }
+
+  static Future<String> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    final response = await _send(
+      () => http.post(
+        Uri.parse('$baseUrl/password/reset'),
+        headers: _jsonHeaders,
+        body: jsonEncode({
+          'email': email.trim(),
+          'code': code.trim(),
+          'password': password,
+          'password_confirmation': password,
+        }),
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final data = _decode(response) as Map;
+      return (data['message'] ??
+              'Your password was reset. Please log in with your new password.')
+          .toString();
+    }
+    throw Exception(_message(response, 'Could not reset your password.'));
+  }
+
   static Future<Map<String, dynamic>> register(
     Map<String, dynamic> body, {
     String? verificationDocumentPath,
@@ -227,8 +272,12 @@ class ApiService {
     );
 
     if (response.statusCode == 201) {
-      final data = _decode(response) as Map;
-      return Map<String, dynamic>.from(data['data'] as Map);
+      final envelope = _decode(response) as Map;
+      return <String, dynamic>{
+        ...Map<String, dynamic>.from(envelope['data'] as Map),
+        'submission_message': envelope['message']?.toString(),
+        'venue_warning': envelope['venue_warning']?.toString(),
+      };
     }
     throw Exception(_message(response, 'Could not send your report.'));
   }
@@ -294,8 +343,11 @@ class ApiService {
     );
 
     if (response.statusCode == 201) {
-      final data = _decode(response) as Map;
-      return Map<String, dynamic>.from(data['data'] as Map);
+      final envelope = _decode(response) as Map;
+      return <String, dynamic>{
+        ...Map<String, dynamic>.from(envelope['data'] as Map),
+        'submission_message': envelope['message']?.toString(),
+      };
     }
     throw Exception(_message(response, 'Could not submit your complaint.'));
   }
@@ -367,7 +419,8 @@ class ApiService {
 
   // ---------- certificates ----------
 
-  /// Certificates (Forms 20, 20-A, 20-B, 21, 22) of the resident's complaints.
+  /// Certificates and awards (Forms 15, 20, 20-A, 20-B, 20-C, 21, 22) of the
+  /// resident's complaints.
   /// Each item has 'id', 'form_number', 'title', 'complaint_number',
   /// 'date_issued', 'my_role' and 'has_file'.
   static Future<List<Map<String, dynamic>>> getCertificates() async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 import '../widgets/auth_widgets.dart';
+import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
 
@@ -84,6 +85,14 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const RegisterScreen()),
     );
+  }
+
+  Future<void> _openForgotPassword() async {
+    final message = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+    );
+    if (!mounted || message == null) return;
+    _showMessage(message);
   }
 
   // --------------------------------------------------------------- build
@@ -171,6 +180,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                         : Icons.visibility_off_outlined,
                                   ),
                                 ),
+                              ),
+                            ),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed:
+                                    _isLoading ? null : _openForgotPassword,
+                                child: const Text('Forgot password?'),
                               ),
                             ),
 

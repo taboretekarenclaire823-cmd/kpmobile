@@ -20,6 +20,8 @@ _Kind _kindOf(String formNumber) {
   switch (formNumber) {
     case '15':
       return const _Kind('Arbitration award', Icons.gavel, Colors.green);
+    case '20-C':
+      return const _Kind('Arbitration', Icons.gavel, Colors.blue);
     case '21':
     case '22':
       return const _Kind('Bar order', Icons.block, Colors.red);
@@ -170,6 +172,13 @@ class _CertificateListScreenState extends State<CertificateListScreen> {
                   icon: Icons.folder_open_outlined,
                   text: 'Complaint ${c['complaint_number'] ?? '—'}',
                 ),
+                if ((c['complaint_title'] ?? '').toString().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  MetaLine(
+                    icon: Icons.description_outlined,
+                    text: c['complaint_title'].toString(),
+                  ),
+                ],
                 const SizedBox(height: 6),
                 MetaLine(
                   icon: Icons.event,

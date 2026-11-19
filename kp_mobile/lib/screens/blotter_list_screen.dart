@@ -22,7 +22,9 @@ AppBar _appBar(BuildContext context, String title) {
 }
 
 class BlotterListScreen extends StatefulWidget {
-  const BlotterListScreen({super.key});
+  final bool canFile;
+
+  const BlotterListScreen({super.key, this.canFile = true});
 
   @override
   State<BlotterListScreen> createState() => _BlotterListScreenState();
@@ -138,11 +140,13 @@ class _BlotterListScreenState extends State<BlotterListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _appBar(context, 'My reports'),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _newReport,
-        icon: const Icon(Icons.add),
-        label: const Text('New report'),
-      ),
+      floatingActionButton: widget.canFile
+          ? FloatingActionButton.extended(
+              onPressed: _newReport,
+              icon: const Icon(Icons.add),
+              label: const Text('New report'),
+            )
+          : null,
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snapshot) {

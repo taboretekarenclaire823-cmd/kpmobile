@@ -7,12 +7,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   FlutterSecureStoragePlatform.instance = TestFlutterSecureStoragePlatform({});
 
-  testWidgets('KP Mobile app loads', (WidgetTester tester) async {
+  testWidgets('KP Mobile loads and opens password reset', (WidgetTester tester) async {
     await tester.pumpWidget(const KpMobileApp());
     await tester.pumpAndSettle();
 
     expect(find.text('Katarungang Pambarangay'), findsOneWidget);
     expect(find.text('Resident Portal'), findsOneWidget);
     expect(find.text('Log in'), findsOneWidget);
+
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reset your password'), findsOneWidget);
+    expect(find.text('Send reset code'), findsOneWidget);
   });
 }

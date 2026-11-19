@@ -39,6 +39,10 @@ class PartyValue {
         };
 }
 
+class PartyEntry {
+  PartyValue? value;
+}
+
 class PartyField extends FormField<PartyValue> {
   PartyField({
     super.key,
